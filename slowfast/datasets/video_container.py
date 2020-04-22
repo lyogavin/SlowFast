@@ -2,6 +2,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
 import av
+import slowfast.utils.logging as logging
+logger = logging.get_logger(__name__)
+
+
 
 
 def get_video_container(path_to_vid, multi_thread_decode=False, backend="pyav"):
@@ -15,12 +19,14 @@ def get_video_container(path_to_vid, multi_thread_decode=False, backend="pyav"):
     Returns:
         container (container): video container.
     """
+    logger.info('get con')
     if backend == "torchvision":
         with open(path_to_vid, "rb") as fp:
             container = fp.read()
         return container
     elif backend == "pyav":
         container = av.open(path_to_vid)
+        logger.info('path:%s'% path_to_vid)
         if multi_thread_decode:
             # Enable multiple threads for decoding.
             container.streams.video[0].thread_type = "AUTO"

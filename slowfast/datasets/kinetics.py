@@ -111,6 +111,7 @@ class Kinetics(torch.utils.data.Dataset):
         )
 
     def __getitem__(self, index):
+        logger.info('getting item')
         """
         Given the video index, return the list of frames, label, and video
         index if the video can be fetched and decoded successfully, otherwise
@@ -158,6 +159,7 @@ class Kinetics(torch.utils.data.Dataset):
         for _ in range(self._num_retries):
             video_container = None
             try:
+                logger.info('getting container %s' % self._path_to_videos[index])
                 video_container = container.get_video_container(
                     self._path_to_videos[index],
                     self.cfg.DATA_LOADER.ENABLE_MULTI_THREAD_DECODE,

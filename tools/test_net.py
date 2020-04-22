@@ -16,6 +16,8 @@ from slowfast.utils.meters import AVAMeter, TestMeter
 
 logger = logging.get_logger(__name__)
 
+#torch.backends.cudnn.enabled = False
+
 
 @torch.no_grad()
 def perform_test(test_loader, model, test_meter, cfg):
@@ -41,6 +43,7 @@ def perform_test(test_loader, model, test_meter, cfg):
     test_meter.iter_tic()
 
     for cur_iter, (inputs, labels, video_idx, meta) in enumerate(test_loader):
+        """
         # Transfer the data to the current GPU device.
         if isinstance(inputs, (list,)):
             for i in range(len(inputs)):
@@ -57,10 +60,12 @@ def perform_test(test_loader, model, test_meter, cfg):
                     val[i] = val[i].cuda(non_blocking=True)
             else:
                 meta[key] = val.cuda(non_blocking=True)
+                """
 
         if cfg.DETECTION.ENABLE:
             # Compute the predictions.
-            preds = model(inputs, meta["boxes"])
+            model = model.cpu()
+            preds = model(inputs.cpu(), meta["boxes"])
 
             preds = preds.cpu()
             ori_boxes = meta["ori_boxes"].cpu()
@@ -81,6 +86,7 @@ def perform_test(test_loader, model, test_meter, cfg):
             test_meter.log_iter_stats(None, cur_iter)
         else:
             # Perform the forward pass.
+            model = model.cpu()
             preds = model(inputs)
 
             # Gather all the predictions across all the devices to perform ensemble.
@@ -113,7 +119,7 @@ def test(cfg):
             slowfast/config/defaults.py
     """
     # Set up environment.
-    du.init_distributed_training(cfg)
+    #du.init_distributed_training(cfg)
     # Set random seed from configs.
     np.random.seed(cfg.RNG_SEED)
     torch.manual_seed(cfg.RNG_SEED)
@@ -127,8 +133,8 @@ def test(cfg):
 
     # Build the video model and print model statistics.
     model = build_model(cfg)
-    if du.is_master_proc():
-        misc.log_model_info(model, cfg, is_train=False)
+    #if du.is_master_proc():
+    #    misc.log_model_info(model, cfg, is_train=False)
 
     # Load a checkpoint to test if applicable.
     if cfg.TEST.CHECKPOINT_FILE_PATH != "":
@@ -174,14 +180,11 @@ def test(cfg):
         )
         # Create meters for multi-view testing.
         test_meter = TestMeter(
-            len(test_loader.dataset)
-            // (cfg.TEST.NUM_ENSEMBLE_VIEWS * cfg.TEST.NUM_SPATIAL_CROPS),
+            len(test_loader.dataset) // (cfg.TEST.NUM_ENSEMBLE_VIEWS * cfg.TEST.NUM_SPATIAL_CROPS),
             cfg.TEST.NUM_ENSEMBLE_VIEWS * cfg.TEST.NUM_SPATIAL_CROPS,
             cfg.MODEL.NUM_CLASSES,
-            len(test_loader),
-            cfg.DATA.MULTI_LABEL,
-            cfg.DATA.ENSEMBLE_METHOD,
-        )
+            len(test_loader))
+            
 
     # # Perform multi-view test on the entire dataset.
     perform_test(test_loader, model, test_meter, cfg)

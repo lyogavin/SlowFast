@@ -72,7 +72,7 @@ def construct_loader(cfg, split):
         drop_last = False
     elif split in ["test"]:
         dataset_name = cfg.TEST.DATASET
-        batch_size = int(cfg.TEST.BATCH_SIZE / cfg.NUM_GPUS)
+        batch_size = 1 if cfg.NUM_GPUS == 0 else int(cfg.TEST.BATCH_SIZE / cfg.NUM_GPUS)
         shuffle = False
         drop_last = False
 

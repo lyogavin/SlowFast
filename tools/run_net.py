@@ -11,6 +11,8 @@ from slowfast.utils.parser import load_config, parse_args
 from test_net import test
 from train_net import train
 
+torch.backends.cudnn.enabled = False
+
 
 def main():
     """
