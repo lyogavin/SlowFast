@@ -98,8 +98,12 @@ def perform_test(test_loader, model, test_meter, cfg):
             # Perform the forward pass.
             model = model.cpu()
             preds = model(inputs)
+            #logger.info("inputs.shape")
+            #logger.info(inputs[0].shape)
+            logger.info("preds.shape")
+            logger.info(preds.shape)
 
-            sorted_scores, locs = torch.topk(preds,
+            sorted_scores, locs = torch.topk(preds[0],
                                              k=min(10, len(idx_to_class)))
 
             for iii in range(sorted_scores.size(0)):
@@ -124,6 +128,13 @@ def perform_test(test_loader, model, test_meter, cfg):
 
     # Log epoch stats and print the final testing results.
     test_meter.finalize_metrics()
+    vi = 0
+    for vpred in test_meter.video_preds:
+        logger.info("final top 10 result for video %d:" % vi)
+        vi += 1
+        sorted_scores, locs = torch.topk(vpred, k=min(10, len(idx_to_class)))
+        for iii in range(sorted_scores.size(0)):
+            logger.info("%s - %f" % (idx_to_class[locs[iii].item()], sorted_scores[iii].item()))
     test_meter.reset()
 
 
