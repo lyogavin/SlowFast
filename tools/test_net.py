@@ -14,9 +14,19 @@ from slowfast.datasets import loader
 from slowfast.models import build_model
 from slowfast.utils.meters import AVAMeter, TestMeter
 
+import json
+
+with open('./classids.json') as f:
+  class_names = json.load(f)
+
+idx_to_class = {}
+for name, label in class_names.items():
+    idx_to_class[label] = name
+
 logger = logging.get_logger(__name__)
 
 #torch.backends.cudnn.enabled = False
+logger.info(idx_to_class)
 
 
 @torch.no_grad()
@@ -88,6 +98,12 @@ def perform_test(test_loader, model, test_meter, cfg):
             # Perform the forward pass.
             model = model.cpu()
             preds = model(inputs)
+
+            sorted_scores, locs = torch.topk(preds,
+                                             k=min(10, len(idx_to_class)))
+
+            for iii in range(sorted_scores.size(0)):
+                logger.info("%s - %f" % (idx_to_class[locs[iii].item()], sorted_scores[iii].item()))
 
             # Gather all the predictions across all the devices to perform ensemble.
             if cfg.NUM_GPUS > 1:
